@@ -56,10 +56,13 @@ body{display:flex;justify-content:center;align-items:center;}
 .custom-marker .glow{position:absolute;inset:10px 0 0 8px;background:radial-gradient(circle at center, rgba(200,237,135,.38), rgba(200,237,135,0));filter:blur(16px);opacity:.9;}
 .custom-marker .marker-card{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:0;padding:7px;background:rgba(255,255,255,.52);backdrop-filter:blur(14px);border:1px solid rgba(122,146,106,.10);border-radius:999px;box-shadow:0 10px 20px rgba(119,143,96,.08);}
 .marker-thumb{width:44px;height:44px;border-radius:50%;background:#f7f9f2 center/contain no-repeat;flex:0 0 auto;box-shadow:0 8px 18px rgba(125,151,100,.10);animation:iconFloat 2.8s ease-in-out infinite;}
-.marker-thumb.wintermelon{background-image:url('assets/wintermelon.png'); background-color:#efffe8;}
-.marker-thumb.yogurt{background-image:url('assets/yogurt.png'); background-color:#fff8e9;}
-.marker-thumb.lychee{background-image:url('assets/lychee.png'); background-color:#fff4f8;}
-.marker-thumb.blanket{background-image:url('assets/blanket.png'); background-color:#f0f9fa;}
+
+/* 這裡將原本的 assets/ 改成 ./ */
+.marker-thumb.wintermelon{background-image:url('./wintermelon.png'); background-color:#efffe8;}
+.marker-thumb.yogurt{background-image:url('./yogurt.png'); background-color:#fff8e9;}
+.marker-thumb.lychee{background-image:url('./lychee.png'); background-color:#fff4f8;}
+.marker-thumb.blanket{background-image:url('./blanket.png'); background-color:#f0f9fa;}
+
 .marker-info{display:none;}
 .marker-name{font-size:13px;font-weight:800;line-height:1.06;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#4f5d48;}
 .marker-product{font-size:9px;color:#8f9789;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px;}
@@ -76,10 +79,13 @@ body{display:flex;justify-content:center;align-items:center;}
 .modal-close{position:absolute;right:14px;top:14px;width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,.75);font-size:20px;font-weight:800;color:#74836b;cursor:pointer;display:grid;place-items:center;box-shadow:0 6px 14px rgba(122,143,102,.14);}
 .story-head{position:relative;display:flex;align-items:center;gap:14px;margin-top:8px;z-index:1;}
 .story-hero{width:92px;height:92px;flex:0 0 auto;border-radius:24px;background:#fff center/contain no-repeat;box-shadow:0 10px 24px rgba(124,150,97,.12), inset 0 0 0 1px rgba(120,140,101,.08);}
-.story-hero.wintermelon{background-image:url('assets/wintermelon.png');background-color:#efffe7;}
-.story-hero.yogurt{background-image:url('assets/yogurt.png');background-color:#fff8e7;}
-.story-hero.lychee{background-image:url('assets/lychee.png');background-color:#fff2f7;}
-.story-hero.blanket{background-image:url('assets/blanket.png');background-color:#eef9fa;}
+
+/* 這裡將原本的 assets/ 改成 ./ */
+.story-hero.wintermelon{background-image:url('./wintermelon.png');background-color:#efffe7;}
+.story-hero.yogurt{background-image:url('./yogurt.png');background-color:#fff8e7;}
+.story-hero.lychee{background-image:url('./lychee.png');background-color:#fff2f7;}
+.story-hero.blanket{background-image:url('./blanket.png');background-color:#eef9fa;}
+
 .story-title{font-size:27px;line-height:1.1;font-weight:800;margin:0;color:#4b5943;}
 .story-product{display:inline-block;margin-top:8px;padding:7px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(245,236,114,.45),rgba(200,237,135,.52));font-size:12px;font-weight:800;color:#5c694f;box-shadow:0 5px 12px rgba(190,228,112,.15);}
 .story-copy{position:relative;z-index:1;margin:18px 4px 20px;font-size:16px;line-height:1.95;color:#54604c;white-space:pre-line;font-weight:600;}
@@ -233,7 +239,9 @@ body{display:flex;justify-content:center;align-items:center;}
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const ASSETS = {"wintermelon": "assets/wintermelon.png", "yogurt": "assets/yogurt.png", "lychee": "assets/lychee.png", "blanket": "assets/blanket.png"};
+// 這裡將原本的 assets/ 改成 ./
+const ASSETS = {"wintermelon": "./wintermelon.png", "yogurt": "./yogurt.png", "lychee": "./lychee.png", "blanket": "./blanket.png"};
+
 const locations = [{"id": 1, "name": "效率圖書館", "lat": 25.0174, "lng": 121.5405, "product": "寒天冬瓜檸檬 QQ", "asset": "wintermelon", "story": "「逼逼！讀書模式啟動。」\n總圖的冷氣總是特別提神。你熟練地找到專屬的安靜角落，戴上耳機，翻開原文書。今天的目標是把這週的進度全部 K 完！效率值瞬間點滿，誰都別想打擾你的專注時刻。"}, {"id": 2, "name": "緩慢折疊傘", "lat": 25.0155, "lng": 121.539, "product": "椰果晶凍香檸優多", "asset": "yogurt", "story": "「慢慢來，也沒關係。」\n剛走進教學區的你，步伐不快不慢。包包裡總習慣塞一把折疊傘，就像替自己保留一點緩衝。就算行程有點滿，你也會提醒自己先深呼吸，再一件一件完成。"}, {"id": 3, "name": "奔波閃電戰", "lat": 25.015, "lng": 121.5395, "product": "寒天冬瓜檸檬 QQ", "asset": "wintermelon", "story": "「借過借過，下一堂要遲到了！」\n剛下課的十分鐘，你熟練地穿梭在鹿鳴廣場的人潮中。左手抓著剛買的鬆餅，右手滑著下堂課的簡報。你的校園生活就像一場奔波閃電戰，雖然總是在移動，但每天都充實得閃閃發光。"}, {"id": 4, "name": "精算小撲滿", "lat": 25.0158, "lng": 121.536, "product": "寒天冬瓜檸檬 QQ", "asset": "wintermelon", "story": "「這個月的伙食費還剩多少呢？」\n經過校園周邊時，你腦袋裡的小算盤自動開始劈啪作響。從學餐的優惠組合到超商的集點活動，你總能精準掌握每一分錢的去向。你不是小氣，你只是懂得把手邊資源發揮到最大化！"}, {"id": 5, "name": "探索慢活館", "lat": 25.0135, "lng": 121.5368, "product": "椰果晶凍香檸優多", "asset": "yogurt", "story": "「呼～珍貴的空堂時間終於來了！」\n點一杯常喝的飲料，找個靠窗的位子坐下。不管是觀察路人、發呆，還是隨手翻翻雜誌，這是屬於你的慢活探索時光。把步調放慢，徹底充個電，等下又有滿滿的力氣繼續闖關啦！"}, {"id": 6, "name": "軟萌紙吸管", "lat": 25.019, "lng": 121.54, "product": "荔枝蜜蘋包心 Q 凍", "asset": "lychee", "story": "「啊，又沒電了……需要支援！」\n你的社交電量就跟手機電池一樣，總是消耗得特別快。雖然外表看起來軟萌無害、隨和好相處，但在人群中活躍一陣子後，就需要馬上找個充電站癱著。沒事，快充一下，等等又是一尾活龍！"}, {"id": 7, "name": "凱瑞遮陽傘", "lat": 25.0205, "lng": 121.5385, "product": "椰果晶凍香檸優多", "asset": "yogurt", "story": "「大家聽好，我們接下來的進度是這樣……」\n站上台前，你就是全場焦點！不管是分組報告還是活動企劃，你總能條理分明地 Hold 住全場。只要有你在，組員們就覺得安心無比，跟著你的節奏走就對了！"}, {"id": 8, "name": "生活體驗館", "lat": 25.0195, "lng": 121.538, "product": "椰果晶凍香檸優多", "asset": "yogurt", "story": "「走啊，等下要去哪續攤？」\n迎新、社團、之夜……你的行事曆總是排得滿滿滿！漫步在醉月湖畔，你剛結束一場熱絡的聚會。對你來說，整座校園就是最棒的生活體驗館，處處都有新奇的相遇，到哪都能交到新朋友！"}, {"id": 9, "name": "脫線小毛毯", "lat": 25.0185, "lng": 121.543, "product": "椰果晶凍香檸優多", "asset": "blanket", "story": "「再一下下，我還想窩著。」\n當夜色慢慢降下來，你最懂得把自己包進舒服的節奏裡。披著小毛毯、抱著飲料，思緒一邊放空一邊飄遠。你不是偷懶，你只是用自己的方式慢慢回血。"}];
 let isTestMode = true;
 let userLat = null;
