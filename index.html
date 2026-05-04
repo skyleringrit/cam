@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>24 小時有料地圖</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f4f6ef;
+  --bg2:#edf6dd;
+  --ink:#33392e;
+  --muted:#7f8776;
+  --yellow:#f5ec72;
+  --green:#c8ed87;
+  --green2:#b7e469;
+  --mint:#f6ffe8;
+  --white:#ffffff;
+  --soft-white:rgba(255,255,255,.8);
+  --pink:#f6a8ca;
+  --blue:#c5eef5;
+  --shadow:0 14px 30px rgba(95,120,78,.12);
+  --blurline:rgba(113,133,93,.18);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+*, *::before, *::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:'Zen Maru Gothic','M PLUS Rounded 1c','Noto Sans TC',sans-serif;}
+button,input,textarea,select{font:inherit;}
+html,body{margin:0;height:100%;background:#e3ead7;font-family:'Zen Maru Gothic','M PLUS Rounded 1c','Noto Sans TC',sans-serif;overflow:hidden;color:var(--ink);}
+body{display:flex;justify-content:center;align-items:center;}
+#app{position:relative;width:min(100vw,430px);height:100vh;max-height:100dvh;overflow:hidden;background:linear-gradient(180deg,var(--bg),#eff4e4);}
+#map{position:absolute;inset:0;z-index:1;}
+.leaflet-container{background:#eef5e5;font-family:'Zen Maru Gothic','M PLUS Rounded 1c','Noto Sans TC',sans-serif;}
+.leaflet-tile-pane{filter:saturate(.8) brightness(1.06) contrast(.96);}
+.leaflet-control-attribution{font-size:10px;opacity:.62;background:rgba(255,255,255,.55);}
+.leaflet-control-zoom{border:none!important;box-shadow:0 10px 22px rgba(104,126,88,.12);border-radius:18px!important;overflow:hidden;margin-left:14px!important;margin-bottom:92px!important;}
+.leaflet-control-zoom a{width:38px!important;height:38px!important;line-height:38px!important;border:none!important;background:rgba(255,255,255,.88)!important;color:#617456!important;}
+.screen-badge{position:absolute;z-index:50;background:rgba(255,255,255,.82);backdrop-filter:blur(10px);border:1.5px solid rgba(125,145,105,.23);border-radius:999px;padding:11px 16px;font-size:13px;font-weight:800;letter-spacing:.13em;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow);}
+.screen-badge .dot{width:12px;height:12px;border-radius:50%;background:linear-gradient(135deg,#f3ef84,#b6eb73);box-shadow:0 0 0 5px rgba(206,236,132,.24);}
+#top-pill{top:calc(14px + var(--safe-top));left:14px;}
+#shop-sign{position:absolute;z-index:50;top:calc(20px + var(--safe-top));right:14px;text-align:right;font-weight:800;line-height:1.06;color:#55624d;}
+#shop-sign .en{font-size:15px;letter-spacing:.03em;}
+#shop-sign .tw{font-size:11px;letter-spacing:.18em;margin-top:4px;color:#7d8578;}
+#coupon-badge{position:absolute;z-index:60;top:calc(14px + var(--safe-top));right:14px;display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:999px;border:none;background:rgba(255,255,255,.83);font-weight:800;font-size:15px;color:#54654b;box-shadow:var(--shadow);cursor:pointer;backdrop-filter:blur(10px);}
+#coupon-count{min-width:24px;height:24px;border-radius:999px;background:linear-gradient(135deg,var(--yellow),var(--green));display:grid;place-items:center;font-size:12px;color:#4f5a46;padding:0 5px;box-shadow:0 4px 10px rgba(190,227,108,.34);}
+#mode-toggle{position:absolute;z-index:60;right:14px;bottom:calc(18px + var(--safe-bottom));display:flex;align-items:center;gap:10px;padding:11px 15px;border-radius:999px;border:none;background:rgba(255,255,255,.84);font-weight:800;font-size:13px;color:#586650;box-shadow:var(--shadow);cursor:pointer;backdrop-filter:blur(10px);}
+.mode-indicator{width:14px;height:14px;border-radius:50%;background:#84d65c;box-shadow:0 0 0 6px rgba(132,214,92,.18);}
+.user-dot{stroke:#fff;stroke-width:3;filter:drop-shadow(0 6px 12px rgba(173,210,104,.34));}
+.map-intro{position:absolute;left:14px;bottom:calc(18px + var(--safe-bottom));z-index:55;max-width:176px;padding:12px 14px;border-radius:18px;background:rgba(255,255,255,.78);font-size:12px;line-height:1.52;font-weight:700;color:#63715a;box-shadow:var(--shadow);backdrop-filter:blur(10px);}
+.map-intro strong{display:block;font-size:13px;color:#4b5a42;margin-bottom:2px;}
+.custom-marker{position:relative;width:118px;height:56px;pointer-events:auto;animation:bob 3.2s ease-in-out infinite;}
+.custom-marker .marker-hit{position:absolute;inset:-14px -12px;border-radius:32px;}
+.custom-marker .glow{position:absolute;inset:10px 0 0 8px;background:radial-gradient(circle at center, rgba(200,237,135,.38), rgba(200,237,135,0));filter:blur(16px);opacity:.9;}
+.custom-marker .marker-card{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:0;padding:7px;background:rgba(255,255,255,.52);backdrop-filter:blur(14px);border:1px solid rgba(122,146,106,.10);border-radius:999px;box-shadow:0 10px 20px rgba(119,143,96,.08);}
+.marker-thumb{width:44px;height:44px;border-radius:50%;background:#f7f9f2 center/contain no-repeat;flex:0 0 auto;box-shadow:0 8px 18px rgba(125,151,100,.10);animation:iconFloat 2.8s ease-in-out infinite;}
+.marker-thumb.wintermelon{background-image:url('assets/wintermelon.png'); background-color:#efffe8;}
+.marker-thumb.yogurt{background-image:url('assets/yogurt.png'); background-color:#fff8e9;}
+.marker-thumb.lychee{background-image:url('assets/lychee.png'); background-color:#fff4f8;}
+.marker-thumb.blanket{background-image:url('assets/blanket.png'); background-color:#f0f9fa;}
+.marker-info{display:none;}
+.marker-name{font-size:13px;font-weight:800;line-height:1.06;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#4f5d48;}
+.marker-product{font-size:9px;color:#8f9789;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px;}
+.custom-marker.collected .marker-card{background:rgba(242,252,233,.82);}
+.custom-marker.collected .glow{background:radial-gradient(circle at center, rgba(140,220,124,.44), rgba(140,220,124,0));}
+.custom-marker.collected::after{content:'✓';position:absolute;right:-2px;top:-2px;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#f3f67f,#b9ec70);font-size:11px;color:#55604a;box-shadow:0 4px 12px rgba(185,236,112,.5);}
+.leaflet-marker-icon:hover{transform:translateY(-2px) scale(1.01);filter:drop-shadow(0 8px 18px rgba(132,160,104,.14));}
+.leaflet-popup-content-wrapper{border-radius:18px;border:none;box-shadow:0 14px 28px rgba(118,140,98,.16);background:rgba(255,255,255,.82);backdrop-filter:blur(14px);}
+.leaflet-popup-tip{background:rgba(255,255,255,.82);}
+.modal-overlay{position:absolute;inset:0;z-index:120;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(69,83,57,.18);backdrop-filter:blur(8px);}
+.modal-overlay.show{display:flex;}
+.modal-card{width:100%;max-width:392px;max-height:88vh;overflow:auto;border-radius:32px;border:none;background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(250,255,241,.92));box-shadow:0 18px 54px rgba(91,112,76,.18);position:relative;padding:22px 18px 18px;}
+.modal-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at top right, rgba(214,244,131,.28), transparent 32%), radial-gradient(circle at bottom left, rgba(255,245,170,.25), transparent 25%);pointer-events:none;}
+.modal-close{position:absolute;right:14px;top:14px;width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,.75);font-size:20px;font-weight:800;color:#74836b;cursor:pointer;display:grid;place-items:center;box-shadow:0 6px 14px rgba(122,143,102,.14);}
+.story-head{position:relative;display:flex;align-items:center;gap:14px;margin-top:8px;z-index:1;}
+.story-hero{width:92px;height:92px;flex:0 0 auto;border-radius:24px;background:#fff center/contain no-repeat;box-shadow:0 10px 24px rgba(124,150,97,.12), inset 0 0 0 1px rgba(120,140,101,.08);}
+.story-hero.wintermelon{background-image:url('assets/wintermelon.png');background-color:#efffe7;}
+.story-hero.yogurt{background-image:url('assets/yogurt.png');background-color:#fff8e7;}
+.story-hero.lychee{background-image:url('assets/lychee.png');background-color:#fff2f7;}
+.story-hero.blanket{background-image:url('assets/blanket.png');background-color:#eef9fa;}
+.story-title{font-size:27px;line-height:1.1;font-weight:800;margin:0;color:#4b5943;}
+.story-product{display:inline-block;margin-top:8px;padding:7px 11px;border-radius:999px;background:linear-gradient(135deg,rgba(245,236,114,.45),rgba(200,237,135,.52));font-size:12px;font-weight:800;color:#5c694f;box-shadow:0 5px 12px rgba(190,228,112,.15);}
+.story-copy{position:relative;z-index:1;margin:18px 4px 20px;font-size:16px;line-height:1.95;color:#54604c;white-space:pre-line;font-weight:600;}
+.story-divider{height:1px;border:none;background:linear-gradient(90deg, transparent, rgba(130,146,114,.18), transparent);margin:16px 0 18px;position:relative;z-index:1;}
+.ticket-note{position:relative;z-index:1;font-size:12px;color:#8a9380;font-weight:700;}
+.btn-row{position:relative;z-index:1;display:flex;gap:10px;}
+.btn{width:100%;padding:15px 14px;border:none;border-radius:22px;font-size:16px;font-weight:800;cursor:pointer;transition:transform .16s ease, opacity .16s ease, box-shadow .16s ease;font-family:'Zen Maru Gothic','M PLUS Rounded 1c','Noto Sans TC',sans-serif;}
+.btn:active{transform:translateY(1px) scale(.995);}
+.btn-primary{background:linear-gradient(135deg,#f5ef83,#c0ec77);box-shadow:0 0 20px rgba(202,237,133,.35),0 10px 22px rgba(196,230,116,.20);color:#57644d;}
+.btn-secondary{background:rgba(255,255,255,.78);color:#6a7662;box-shadow:0 10px 18px rgba(122,144,104,.08);}
+.wallet-body{position:relative;z-index:1;padding-top:8px;}
+.wallet-title{margin:8px 0 6px;font-size:28px;font-weight:800;color:#4f5d48;}
+.wallet-sub{margin:0 0 14px;color:#8b9385;font-size:13px;font-weight:700;}
+.ticket-list{display:flex;flex-direction:column;gap:12px;}
+.ticket-card{display:grid;grid-template-columns:58px 1fr auto;gap:12px;align-items:center;padding:12px;border-radius:22px;background:rgba(255,255,255,.78);box-shadow:0 10px 22px rgba(122,142,104,.08);}
+.ticket-avatar{width:58px;height:58px;border-radius:18px;background:#fff center/contain no-repeat;box-shadow:inset 0 0 0 1px rgba(120,140,101,.08);}
+.ticket-name{font-size:16px;font-weight:800;color:#52604a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ticket-desc{margin-top:4px;font-size:12px;color:#858d80;font-weight:700;line-height:1.45;}
+.ticket-tag{padding:7px 10px;border-radius:999px;background:linear-gradient(135deg,rgba(245,236,114,.48),rgba(200,237,135,.44));font-size:11px;font-weight:800;color:#68765f;white-space:nowrap;}
+.empty-wallet{padding:24px 12px 10px;text-align:center;color:#7d8677;}
+.empty-bubble{width:92px;height:92px;border-radius:50%;margin:0 auto 12px;background:radial-gradient(circle at 30% 30%, #fff, #f3f9e9);box-shadow:0 10px 24px rgba(122,142,104,.10);display:grid;place-items:center;font-size:32px;}
+.toast{position:absolute;left:50%;bottom:calc(88px + var(--safe-bottom));transform:translateX(-50%) translateY(14px);z-index:70;padding:10px 14px;border-radius:999px;background:rgba(87,103,74,.95);color:#fff;font-size:13px;font-weight:800;letter-spacing:.02em;opacity:0;pointer-events:none;transition:all .26s ease;box-shadow:0 12px 24px rgba(87,103,74,.18);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+#cover-screen{position:absolute;inset:0;z-index:200;background:radial-gradient(circle at 18% 16%, rgba(255,244,183,.92), transparent 28%), radial-gradient(circle at 82% 28%, rgba(213,244,168,.72), transparent 25%), radial-gradient(circle at 24% 82%, rgba(215,244,255,.58), transparent 24%), linear-gradient(180deg,#f8f8f3 0%, #f2f7ec 52%, #eff6ee 100%);display:flex;flex-direction:column;align-items:center;padding:calc(14px + var(--safe-top)) 18px calc(18px + var(--safe-bottom));overflow:hidden;cursor:pointer;}
+#cover-screen::before{content:'';position:absolute;width:220px;height:220px;left:-70px;top:110px;border-radius:50%;background:radial-gradient(circle, rgba(255,255,255,.95), rgba(255,255,255,0));filter:blur(18px);opacity:.8;pointer-events:none;}#cover-screen::after{content:'';position:absolute;width:250px;height:250px;right:-88px;bottom:170px;border-radius:50%;background:radial-gradient(circle, rgba(233,255,201,.88), rgba(233,255,201,0));filter:blur(24px);opacity:.9;pointer-events:none;}#cover-screen.hide{animation:coverOut .55s ease forwards;pointer-events:none;}
+@keyframes coverOut{to{opacity:0;transform:translateY(-8px) scale(.985);visibility:hidden;}}
+.cover-pill{align-self:flex-start;display:flex;align-items:center;gap:10px;padding:10px 18px;border:1px solid rgba(143,162,124,.24);border-radius:999px;background:rgba(255,255,255,.72);backdrop-filter:blur(10px);font-size:13px;font-weight:800;letter-spacing:.16em;color:#708062;box-shadow:0 10px 22px rgba(167,188,134,.12);}
+.cover-pill .pinkdot{width:12px;height:12px;border-radius:50%;background:linear-gradient(135deg,#f5ec72,#b7e469);box-shadow:0 0 0 5px rgba(193,232,112,.25);}
+.cover-brand{position:absolute;top:calc(18px + var(--safe-top));right:18px;text-align:right;}
+.cover-brand .en{font-weight:800;font-size:16px;color:#708062;text-shadow:0 2px 8px rgba(255,255,255,.7);}
+.cover-brand .tw{margin-top:5px;font-size:11px;color:#8a9184;font-weight:800;letter-spacing:.18em;}
+.cover-star{position:absolute;font-size:56px;color:var(--yellow);line-height:1;filter:drop-shadow(0 10px 22px rgba(241,237,116,.35)) blur(.3px);opacity:.95;text-shadow:0 0 14px rgba(255,247,170,.88);}
+.cover-star.star1{right:24px;top:96px;transform:rotate(8deg);}
+.cover-star.star2{left:-2px;top:420px;transform:rotate(-8deg);font-size:44px;color:var(--green2);}
+.cover-title-wrap{margin-top:150px;text-align:center;position:relative;z-index:2;}
+.cover-small{font-size:15px;color:#92988b;font-weight:800;letter-spacing:.28em;text-indent:.28em;margin-bottom:18px;}
+.cover-title-top{font-size:45px;line-height:1.1;font-weight:900;color:#89a94a;margin-bottom:18px;letter-spacing:.05em;text-shadow:0 0 18px rgba(200,238,100,.98),0 0 32px rgba(245,236,114,.64),0 6px 22px rgba(201,226,131,.22);}
+.cover-title{font-size:31px;line-height:1.1;font-weight:800;letter-spacing:.03em;margin:0;color:#66745f;text-shadow:0 2px 8px rgba(255,255,255,.7);}
+.cover-title .accent{display:inline-block;position:relative;}
+.cover-title .accent span{position:relative;z-index:2;}
+.cover-title .accent::after{content:'';position:absolute;left:6px;right:6px;bottom:8px;height:16px;background:rgba(200,237,135,.72);border-radius:10px;filter:blur(1px);z-index:1;}
+.cover-glow{display:none;}
+.cover-divider{display:none;}
+.cover-desc{display:none;text-align:center;width:100%;max-width:none;margin-left:auto;margin-right:auto;white-space:nowrap;}
+.cover-desc strong{display:block;color:#626a5d;font-size:18px;margin-bottom:2px;}
+.floating-hint{position:absolute;left:50%;bottom:120px;transform:translateX(-50%);font-size:17px;font-weight:900;color:#7b8b70;text-shadow:0 0 22px rgba(255,255,255,.98),0 0 16px rgba(200,237,135,.65);animation:hintFloat 1.9s ease-in-out infinite;white-space:nowrap;z-index:2;}
+@keyframes hintFloat{0%,100%{transform:translateX(-50%) translateY(0);opacity:.72;}50%{transform:translateX(-50%) translateY(-8px);opacity:1;}}
+.cover-bubble{position:absolute;border-radius:50%;background:radial-gradient(circle at 35% 35%, rgba(255,255,255,.9), rgba(255,255,255,.1) 58%, rgba(255,255,255,.0) 62%);filter:blur(.3px);box-shadow:inset 0 0 24px rgba(255,255,255,.55), 0 0 22px rgba(255,255,255,.28);animation:floaty linear infinite;opacity:.9;}
+.cover-bubble.b1{left:-16px;bottom:110px;width:66px;height:66px;animation-duration:3.2s;}
+.cover-bubble.b2{right:-10px;bottom:214px;width:84px;height:84px;animation-duration:4.1s;}
+.cover-bubble.b3{right:10px;top:350px;width:54px;height:54px;animation-duration:3.7s;}
+.cover-bubble.b4{left:10px;top:200px;width:46px;height:46px;animation-duration:4.4s;}
+.cover-bubble.b5{left:30px;bottom:270px;width:56px;height:56px;animation-duration:3.5s;}
+.cover-bubble.green{background:radial-gradient(circle at 35% 35%, rgba(225,255,183,.98), rgba(225,255,183,.18) 56%, rgba(225,255,183,0) 64%);}
+.cover-bubble.yellow{background:radial-gradient(circle at 35% 35%, rgba(255,245,176,.98), rgba(255,245,176,.18) 56%, rgba(255,245,176,0) 64%);}
+@keyframes floaty{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-10px) scale(1.03);}}
+.cover-meta{position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:space-between;padding:0 18px;color:#a3a99d;font-weight:800;letter-spacing:.2em;font-size:11px;}
+@keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
+@keyframes iconFloat{0%,100%{transform:translateY(0) rotate(0deg) scale(1);}50%{transform:translateY(-3px) rotate(-2deg) scale(1.03);}}
+@media (max-width:390px){
+  .cover-title-top{font-size:27px;}
+  .cover-title{font-size:46px;}
+  .cover-desc{font-size:13px !important; white-space:nowrap;}
+  .custom-marker{width:110px;height:54px;}
+  .marker-thumb{width:42px;height:42px;}
+  .marker-name{font-size:12px;}
+  .marker-product{font-size:8px;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="map"></div>
+  <div id="top-pill" class="screen-badge"><span class="dot"></span>PERSONALITY ・ 2026</div>
+  <div id="shop-sign"><div class="en">BIG STRAW HALL</div><div class="tw">大吸館 SHOP</div></div>
+  <button id="coupon-badge" onclick="openWallet()">🎟️ 我的票夾 <span id="coupon-count">0</span></button>
+  <button id="mode-toggle" onclick="toggleMode()"><span class="mode-indicator" id="mode-dot"></span><span id="mode-text">測試版（無限制）</span></button>
+  <div class="map-intro"><strong>24 小時有料地圖</strong>點擊地圖上的人格角色，收集專屬票券與故事。</div>
+  <div id="toast" class="toast"></div>
+
+  <div id="story-modal" class="modal-overlay" onclick="overlayClose(event, 'story-modal')">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeModal('story-modal')">×</button>
+      <div class="story-head">
+        <div id="story-hero" class="story-hero"></div>
+        <div class="story-meta">
+          <h2 id="story-title" class="story-title">效率圖書館</h2>
+          <div id="story-product" class="story-product">寒天冬瓜檸檬 QQ</div>
+        </div>
+      </div>
+      <hr class="story-divider">
+      <div id="story-copy" class="story-copy">故事內容</div>
+      <div class="ticket-note">收藏後將自動存入票夾，並列顯示在你的收集清單中。</div>
+      <div class="btn-row" style="margin-top:16px;">
+        <button class="btn btn-primary" onclick="collectReward()">確認收藏</button>
+        <button class="btn btn-secondary" onclick="closeModal('story-modal')">先不要</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="reward-modal" class="modal-overlay" onclick="overlayClose(event, 'reward-modal')">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeModal('reward-modal')">×</button>
+      <div class="story-head">
+        <div id="reward-hero" class="story-hero"></div>
+        <div class="story-meta">
+          <h2 class="story-title" style="font-size:30px;">收集成功！</h2>
+          <div class="story-product">票券已存入票夾</div>
+        </div>
+      </div>
+      <hr class="story-divider">
+      <div id="reward-copy" class="story-copy" style="margin-bottom:14px;">你已獲得「大吸管系列飲品第二件六折」票券。</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="goWalletFromReward()">查看票夾</button>
+        <button class="btn btn-secondary" onclick="closeModal('reward-modal')">繼續探索</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="wallet-modal" class="modal-overlay" onclick="overlayClose(event, 'wallet-modal')">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeModal('wallet-modal')">×</button>
+      <div class="wallet-body">
+        <h2 class="wallet-title">我的票夾</h2>
+        <p class="wallet-sub">別忘了使用您的角色票券唷！</p>
+        <div id="ticket-list" class="ticket-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="cover-screen" onclick="enterExperience()">
+    <div class="cover-pill"><span class="pinkdot"></span>PERSONALITY ・ 2026</div>
+    <div class="cover-brand"><div class="en">BIG STRAW HALL</div><div class="tw">大吸館 SHOP</div></div>
+    <div class="cover-star star1">✦</div>
+    <div class="cover-star star2">✦</div>
+    <div class="cover-title-wrap">
+      <div class="cover-small">無 時 無 刻 有 料 探 索</div>
+      <div class="cover-title-top">隱藏款<br>大吸館</div>
+      <h1 class="cover-title">24 小時有料地圖</h1>
+    </div>
+    
+    <div class="cover-desc" style="display:block;margin-top:34px;font-size:14px;line-height:1.7;color:#6e7669;text-align:center;width:100%;max-width:none;margin-left:auto;margin-right:auto;white-space:nowrap;letter-spacing:.01em;">遊校園、領優惠！ 校園指定地點打卡，解鎖大吸館專屬優惠</div>
+    <div class="floating-hint" style="bottom:92px;">點擊任意處</div>
+    <div class="cover-bubble b1 yellow"></div>
+    <div class="cover-bubble b2 green"></div>
+    <div class="cover-bubble b3 yellow"></div>
+    <div class="cover-bubble b4 green"></div>
+    <div class="cover-bubble b5 yellow"></div>
+    <div class="cover-meta"><span>NO.001</span><span>EST.2026</span><span>VOL.I</span></div>
+  </div>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const ASSETS = {"wintermelon": "assets/wintermelon.png", "yogurt": "assets/yogurt.png", "lychee": "assets/lychee.png", "blanket": "assets/blanket.png"};
+const locations = [{"id": 1, "name": "效率圖書館", "lat": 25.0174, "lng": 121.5405, "product": "寒天冬瓜檸檬 QQ", "asset": "wintermelon", "story": "「逼逼！讀書模式啟動。」\n總圖的冷氣總是特別提神。你熟練地找到專屬的安靜角落，戴上耳機，翻開原文書。今天的目標是把這週的進度全部 K 完！效率值瞬間點滿，誰都別想打擾你的專注時刻。"}, {"id": 2, "name": "緩慢折疊傘", "lat": 25.0155, "lng": 121.539, "product": "椰果晶凍香檸優多", "asset": "yogurt", "story": "「慢慢來，也沒關係。」\n剛走進教學區的你，步伐不快不慢。包包裡總習慣塞一把折疊傘，就像替自己保留一點緩衝。就算行程有點滿，你也會提醒自己先深呼吸，再一件一件完成。"}, {"id": 3, "name": "奔波閃電戰", "lat": 25.015, "lng": 121.5395, "product": "寒天冬瓜檸檬 QQ", "asset": "wintermelon", "story": "「借過借過，下一堂要遲到了！」\n剛下課的十分鐘，你熟練地穿梭在鹿鳴廣場的人潮中。左手抓著剛買的鬆餅，右手滑著下堂課的簡報。你的校園生活就像一場奔波閃電戰，雖然總是在移動，但每天都充實得閃閃發光。"}, {"id": 4, "name": "精算小撲滿", "lat": 25.0158, "lng": 121.536, "product": "寒天冬瓜檸檬 QQ", "asset": "wintermelon", "story": "「這個月的伙食費還剩多少呢？」\n經過校園周邊時，你腦袋裡的小算盤自動開始劈啪作響。從學餐的優惠組合到超商的集點活動，你總能精準掌握每一分錢的去向。你不是小氣，你只是懂得把手邊資源發揮到最大化！"}, {"id": 5, "name": "探索慢活館", "lat": 25.0135, "lng": 121.5368, "product": "椰果晶凍香檸優多", "asset": "yogurt", "story": "「呼～珍貴的空堂時間終於來了！」\n點一杯常喝的飲料，找個靠窗的位子坐下。不管是觀察路人、發呆，還是隨手翻翻雜誌，這是屬於你的慢活探索時光。把步調放慢，徹底充個電，等下又有滿滿的力氣繼續闖關啦！"}, {"id": 6, "name": "軟萌紙吸管", "lat": 25.019, "lng": 121.54, "product": "荔枝蜜蘋包心 Q 凍", "asset": "lychee", "story": "「啊，又沒電了……需要支援！」\n你的社交電量就跟手機電池一樣，總是消耗得特別快。雖然外表看起來軟萌無害、隨和好相處，但在人群中活躍一陣子後，就需要馬上找個充電站癱著。沒事，快充一下，等等又是一尾活龍！"}, {"id": 7, "name": "凱瑞遮陽傘", "lat": 25.0205, "lng": 121.5385, "product": "椰果晶凍香檸優多", "asset": "yogurt", "story": "「大家聽好，我們接下來的進度是這樣……」\n站上台前，你就是全場焦點！不管是分組報告還是活動企劃，你總能條理分明地 Hold 住全場。只要有你在，組員們就覺得安心無比，跟著你的節奏走就對了！"}, {"id": 8, "name": "生活體驗館", "lat": 25.0195, "lng": 121.538, "product": "椰果晶凍香檸優多", "asset": "yogurt", "story": "「走啊，等下要去哪續攤？」\n迎新、社團、之夜……你的行事曆總是排得滿滿滿！漫步在醉月湖畔，你剛結束一場熱絡的聚會。對你來說，整座校園就是最棒的生活體驗館，處處都有新奇的相遇，到哪都能交到新朋友！"}, {"id": 9, "name": "脫線小毛毯", "lat": 25.0185, "lng": 121.543, "product": "椰果晶凍香檸優多", "asset": "blanket", "story": "「再一下下，我還想窩著。」\n當夜色慢慢降下來，你最懂得把自己包進舒服的節奏裡。披著小毛毯、抱著飲料，思緒一邊放空一邊飄遠。你不是偷懶，你只是用自己的方式慢慢回血。"}];
+let isTestMode = true;
+let userLat = null;
+let userLng = null;
+let currentLocationData = null;
+const ntuCenter = { lat: 25.0173, lng: 121.5397 };
+const campusRadius = 1500;
+const walletStorageKey = 'bigStrawWalletSoftCuteV3';
+let walletTickets = [];
+
+const map = L.map('map', { zoomControl:true, minZoom:15, maxZoom:19, zoomSnap:.25 }).setView([25.0173, 121.5397], 16.15);
+const baseMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution:'© OpenStreetMap contributors © CARTO', subdomains:'abcd', maxZoom:20 }).addTo(map);
+const fallbackMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OpenStreetMap contributors' });
+baseMap.on('tileerror', function() { if(!map.hasLayer(fallbackMap)) fallbackMap.addTo(map); });
+let userMarker = L.circleMarker([0,0], { color:'#fff', className:'user-dot', radius:8, fillColor:'#b4df72', fillOpacity:.95, opacity:0 }).addTo(map);
+
+function loadWallet() {
+  try { walletTickets = JSON.parse(localStorage.getItem(walletStorageKey) || '[]'); } catch(e) { walletTickets = []; }
+  const collectedIds = new Set(walletTickets.map(t => t.id));
+  locations.forEach(loc => { loc.collected = collectedIds.has(loc.id); });
+  updateCouponCount();
+}
+function saveWallet() { localStorage.setItem(walletStorageKey, JSON.stringify(walletTickets)); updateCouponCount(); }
+function updateCouponCount() { document.getElementById('coupon-count').textContent = walletTickets.length; renderWallet(); }
+function getDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371e3, p=Math.PI/180;
+  const a = .5 - Math.cos((lat2-lat1)*p)/2 + Math.cos(lat1*p)*Math.cos(lat2*p)*(1-Math.cos((lon2-lon1)*p))/2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+if ('geolocation' in navigator) {
+  navigator.geolocation.watchPosition((position) => {
+    userLat = position.coords.latitude; userLng = position.coords.longitude;
+    userMarker.setLatLng([userLat, userLng]); userMarker.setStyle({ opacity:1, fillOpacity:.95 });
+  }, () => {}, { enableHighAccuracy:true });
+}
+function createMarkerIcon(loc) {
+  return L.divIcon({
+    className:'',
+    html:`<div class="custom-marker ${loc.collected ? 'collected' : ''}" style="animation-delay:${(loc.id%5)*.25}s"><div class="marker-hit"></div><div class="glow"></div><div class="marker-card"><div class="marker-thumb ${loc.asset}"></div><div class="marker-info"><div class="marker-name">${loc.name}</div><div class="marker-product">${loc.product}</div></div></div></div>`,
+    iconSize:[118,56],
+    iconAnchor:[28,28],
+    popupAnchor:[0,-26]
+  });
+}
+const markers = {};
+loadWallet();
+locations.forEach(loc => {
+  markers[loc.id] = L.marker([loc.lat, loc.lng], { icon:createMarkerIcon(loc), riseOnHover:true }).addTo(map);
+  markers[loc.id].on('click', function() {
+    if (loc.collected) { markers[loc.id].bindPopup(`<b>${loc.name}</b><br>已收藏，票券已在你的票夾裡。`).openPopup(); return; }
+    if (isTestMode) { triggerStoryModal(loc); }
+    else {
+      if (!userLat || !userLng) { alert('📍 系統目前無法取得 GPS 定位，請開啟定位權限或切換至測試版。'); return; }
+      const distToCampus = getDistance(userLat, userLng, ntuCenter.lat, ntuCenter.lng);
+      if (distToCampus > campusRadius) { alert('🚷 你目前不在台大校園範圍內，請進入校園後再開始收集。'); return; }
+      const distToMarker = getDistance(userLat, userLng, loc.lat, loc.lng);
+      if (distToMarker <= 50) triggerStoryModal(loc);
+      else alert(`🚶 你距離【${loc.name}】還有約 ${Math.round(distToMarker)} 公尺，請再靠近一點喔！`);
+    }
+  });
+});
+function triggerStoryModal(location) {
+  currentLocationData = location;
+  document.getElementById('story-title').textContent = location.name;
+  document.getElementById('story-product').textContent = location.product;
+  document.getElementById('story-copy').textContent = location.story;
+  document.getElementById('story-hero').className = 'story-hero ' + location.asset;
+  document.getElementById('story-modal').classList.add('show');
+}
+function collectReward() {
+  if (!currentLocationData) return;
+  if (!walletTickets.some(t => t.id === currentLocationData.id)) {
+    walletTickets.unshift({ id: currentLocationData.id, name: currentLocationData.name, product: currentLocationData.product, asset: currentLocationData.asset, benefit: '大吸管系列飲品第二件六折', code: 'BSH-' + String(currentLocationData.id).padStart(3, '0'), time: new Date().toLocaleString('zh-TW', { hour12:false }) });
+    currentLocationData.collected = true; saveWallet(); markers[currentLocationData.id].setIcon(createMarkerIcon(currentLocationData));
+  }
+  closeModal('story-modal');
+  document.getElementById('reward-hero').className = 'story-hero ' + currentLocationData.asset;
+  document.getElementById('reward-copy').textContent = `你已獲得【${currentLocationData.name}】的收藏票券，優惠內容為「大吸管系列飲品第二件六折」。`;
+  document.getElementById('reward-modal').classList.add('show'); showToast('票券已加入票夾！');
+}
+function renderWallet() {
+  const list = document.getElementById('ticket-list');
+  if (!walletTickets.length) {
+    list.innerHTML = `<div class="empty-wallet"><div class="empty-bubble">🎟️</div><div style="font-weight:800;color:#596551;margin-bottom:6px;">還沒有收集到票券</div><div>先去地圖上點擊人格角色，把你的收藏一張一張存進票夾吧！</div></div>`; return;
+  }
+  list.innerHTML = walletTickets.map(ticket => `
+    <div class="ticket-card">
+      <div class="ticket-avatar" style="background-image:url(${ASSETS[ticket.asset]});"></div>
+      <div class="ticket-main">
+        <div class="ticket-name">${ticket.name}</div>
+        <div class="ticket-desc">${ticket.product}<br>優惠：${ticket.benefit}<br>編號：${ticket.code}</div>
+      </div>
+      <div class="ticket-tag">已收集</div>
+    </div>`).join('');
+}
+function openWallet() { document.getElementById('wallet-modal').classList.add('show'); renderWallet(); }
+function goWalletFromReward() { closeModal('reward-modal'); openWallet(); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function overlayClose(e, id) { if (e.target.id === id) closeModal(id); }
+function toggleMode() {
+  isTestMode = !isTestMode;
+  const dot = document.getElementById('mode-dot'); const text = document.getElementById('mode-text');
+  if (isTestMode) { dot.style.background = '#84d65c'; dot.style.boxShadow='0 0 0 6px rgba(132,214,92,.18)'; text.textContent = '測試版（無限制）'; showToast('已切換為測試版，可直接點擊角色。'); }
+  else { dot.style.background = '#f4d36b'; dot.style.boxShadow='0 0 0 6px rgba(244,211,107,.20)'; text.textContent = '正式版（需 GPS）'; showToast('已切換為正式版，需進入台大校園並靠近點位。'); }
+}
+function showToast(msg) {
+  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(showToast.timer); showToast.timer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+function enterExperience() {
+  const cover = document.getElementById('cover-screen'); cover.classList.add('hide'); showToast('開始探索你的命定大吸館！'); setTimeout(() => cover.remove(), 600);
+}
+window.openWallet = openWallet; window.toggleMode = toggleMode; window.collectReward = collectReward; window.closeModal = closeModal; window.overlayClose = overlayClose; window.goWalletFromReward = goWalletFromReward;
+</script>
+</body>
+</html>
